@@ -1,0 +1,67 @@
+﻿@page "/"
+@using UpdatingTable.Data
+@using UpdatingTable.Services
+@*
+    Prerender false to stop the events getting double subscribed
+    https://stackoverflow.com/a/58077021/4641273
+*@
+@rendermode @(new InteractiveServerRenderMode(prerender:false))
+@inject ItemViewService _itemViewService
+@inject DataService _dataService
+
+<PageTitle>Home</PageTitle>
+
+<ul>
+    @if (_itemViewService.CurrentView == null)
+    {
+        <li>Loading...</li>
+    }
+    else if (_itemViewService.CurrentView.Count == 0)
+    {
+        <li>No data</li>
+    }
+    else
+    {
+        @foreach (var item in _itemViewService.CurrentView)
+        {
+            <li>
+                <p><b>@item.Id</b>: @item.Name - @item.Description <button @onclick="@(e => DeleteItem(e, item))">yeet</button></p>
+
+            </li>
+        }
+    }
+
+    <InputText @bind-Value="NewName" placeholder="Name"></InputText>
+    <InputText @bind-Value="NewDesc" placeholder="Description"></InputText>
+    <button @onclick="AddItem">Add</button>
+</ul>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Attach the event to the StateHasChanged method
+        _itemViewService.UpdatedView += ((e, a) => InvokeAsync(StateHasChanged));
+        base.OnInitialized();
+    }
+
+    private void DeleteItem(MouseEventArgs e, Item item)
+    {
+        _dataService.Remove(item);
+    }
+
+    private string NewName = string.Empty;
+    private string NewDesc = string.Empty;
+
+    private void AddItem(MouseEventArgs e)
+    {
+        Item item = new()
+            {
+                Name = NewName,
+                Description = NewDesc
+            };
+
+        _dataService.Add(item);
+
+        NewName = NewDesc = string.Empty;
+    }
+}
